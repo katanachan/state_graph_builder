@@ -10,17 +10,15 @@
 #include <state_graph_builder/graph.h>
 #include <state_graph_builder/posegraph.h>
 #include <state_graph_builder/posestampedgraph.h>
-class Builder
+class ObsMatrix
 {
   public:
-  Builder();
-  ~Builder();
+  ObsMatrix();
+  ~ObsMatrix();
   private:
   ros::NodeHandle nh;
   ros::NodeHandle nh_private_;
   ros::Publisher pub;
-  std_msgs::Bool switch_signal;
-  ros::Subscriber switch_sub;
 
   int n;
   int id;// 1 for ugv 0 for uav
@@ -52,17 +50,17 @@ class Builder
   state_graph_builder::posestampedgraph posetmsg;
 
 };
-void Builder::ugv1_subCallback(const nav_msgs::Odometry::ConstPtr& msgs, const int list_idx){
+void ObsMatrix::ugv1_subCallback(const nav_msgs::Odometry::ConstPtr& msgs, const int list_idx){
   ugv_list1[list_idx]=msgs->pose.pose;
   
 }
-void Builder::obs_subCallback(const geometry_msgs::PoseStamped::ConstPtr& msgs, const list_idx){
+void ObsMatrix::obs_subCallback(const geometry_msgs::PoseStamped::ConstPtr& msgs, const list_idx){
   obs_list[list_idx].pose = msgs->pose;
-void Builder::ugvout_subCallback(const geometry_msgs::PoseStamped::ConstPtr& msgs, const int list_idx){
+void ObsMatrix::ugvout_subCallback(const geometry_msgs::PoseStamped::ConstPtr& msgs, const int list_idx){
   ugvout_list[list_idx].pose=msgs->pose;
   
 }
-void Builder::ugv2_subCallback(const geometry_msgs::Twist::ConstPtr& msgs, const int list_idx){
+void ObsMatrix::ugv2_subCallback(const geometry_msgs::Twist::ConstPtr& msgs, const int list_idx){
   ROS_INFO("I heard: [%lf]", msgs->linear.x);
   ugv_list2[list_idx].x=msgs->linear.x;
   ugv_list2[list_idx].y=0.0;
@@ -70,16 +68,16 @@ void Builder::ugv2_subCallback(const geometry_msgs::Twist::ConstPtr& msgs, const
   
 }
 
-void Builder::uav_subCallback(const geometry_msgs::PointStamped::ConstPtr& msgs, const int list_idx){
+void ObsMatrix::uav_subCallback(const geometry_msgs::PointStamped::ConstPtr& msgs, const int list_idx){
   uav_list[list_idx].x = msgs->point.x;
   uav_list[list_idx].y = msgs->point.y;
   uav_list[list_idx].z = msgs->point.z;  
 }
-void Builder::switch_subCallback(const std_msgs::Bool::ConstPtr& msg){
+void ObsMatrix::switch_subCallback(const std_msgs::Bool::ConstPtr& msg){
  switch_signal.data = msg->data;
 }
 
-Builder::Builder()
+ObsMatrix::ObsMatrix()
   :nh_private_("~")
 {
   
@@ -100,19 +98,19 @@ Builder::Builder()
      ROS_INFO("Switch is True. Ready to record data %d", n);
      for (int i=1; i < n+1; i++){
        //std::string sub_topic = "/uav" + std::to_string(i) + "/ground_truth/position";
-       //uav_subs.push_back( nh.subscribe<geometry_msgs::PointStamped>(sub_topic, 10, boost::bind(&Builder::uav_subCallback,this,_1, i)) );
+       //uav_subs.push_back( nh.subscribe<geometry_msgs::PointStamped>(sub_topic, 10, boost::bind(&ObsMatrix::uav_subCallback,this,_1, i)) );
 
        
        //std::string sub_topic2 = "/ugv" + std::to_string(i) + "/cmd_vel_mux/input/teleop";
       
-       //ugv_sub2.push_back( nh.subscribe<geometry_msgs::Twist>(sub_topic2, 10, boost::bind(&Builder::ugv2_subCallback,this,_1, i-1)) );
+       //ugv_sub2.push_back( nh.subscribe<geometry_msgs::Twist>(sub_topic2, 10, boost::bind(&ObsMatrix::ugv2_subCallback,this,_1, i-1)) );
        if (env==0){
 	 std::string sub_topic3 = "/ugv" + std::to_string(i) + "/odom";
-	 ugv_sub1.push_back( nh.subscribe<nav_msgs::Odometry>(sub_topic3, 10, boost::bind(&Builder::ugv1_subCallback,this,_1, i-1)) );
+	 ugv_sub1.push_back( nh.subscribe<nav_msgs::Odometry>(sub_topic3, 10, boost::bind(&ObsMatrix::ugv1_subCallback,this,_1, i-1)) );
        }
        else{
 	 std::string sub_topic3 = "/R" + std::to_string(i);
-	 ugv_subout.push_back( nh.subscribe<geometry_msgs::PoseStamped>(sub_topic3, 10, boost::bind(&Builder::ugvout_subCallback,this,_1, i-1)) );
+	 ugv_subout.push_back( nh.subscribe<geometry_msgs::PoseStamped>(sub_topic3, 10, boost::bind(&ObsMatrix::ugvout_subCallback,this,_1, i-1)) );
        }
      }
      ROS_INFO("All publisher initialized");
@@ -161,16 +159,16 @@ Builder::Builder()
     
 }
 
-Builder::~Builder()
+ObsMatrix::~ObsMatrix()
 {
   ros::shutdown();
 }
 
 int main(int argc, char **argv) {
      //Initializes ROS, and sets up a node
-     ros::init(argc, argv, "builder");
+     ros::init(argc, argv, "obsmatrix");
 
-     Builder builder;
+     ObsMatrix matrix;
     
      ros::spin();
           
